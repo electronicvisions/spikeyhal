@@ -1,0 +1,23 @@
+# some object files
+*.o
+
+# build directory, waf stuff
+build/
+.lock-wscript
+.waf*
+
+# compiled binaries
+/bin/createtb
+# output files
+output/*.txt
+output/*.png
+# generated files
+/Makefile.deps
+/ht_transfers.dat
+
+
+# editor generated files
+.*.sw[pon]
+*~
+~*
+

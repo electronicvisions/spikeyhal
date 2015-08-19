@@ -1,0 +1,69 @@
+27
+1 1 1
+12 0 0 0 // LUT 0 
+0 12 0 0 // LUT 1
+0 9 0 0 // LUT 2
+9 0 0 0 // LUT 3
+11 0 0 0 // LUT 4
+13 0 0 0 // LUT 5
+15 0 0 0 // LUT 6
+0 3 0 0 // LUT 7
+0 5 0 0 // LUT 8
+0 7 0 0 // LUT 9
+0 9 0 0 // LUT 10
+0 11 0 0 // LUT 11
+0 13 0 0 // LUT 12
+0 15 0 0 // LUT 13
+1 0 0 0 // LUT 14
+1 0 0 0 // LUT 15
+3648  620  0 // voutr 0
+3650  620  3 // voutr 1
+3652  530  0 // voutr 2
+3654  455  0 // voutr 3
+3656  379  0 // voutr 4
+3658  150  0 // voutr 5
+3660  227  0 // voutr 6
+3662  151  0 // voutr 7
+3664  75  0 // voutr 8
+3666  0  0 // voutr 9
+3668  200  0 // voutr 10
+3670  0  0 // voutr 11
+3672  0  0 // voutr 12
+3674  0  0 // voutr 13
+3676  0  0 // voutr 14
+3678  0  0 // voutr 15
+3680  0  0 // voutr 16
+3682  0  0 // voutr 17
+3684  0  0 // voutr 18
+3686  0  0 // voutr 19
+3688  0  0 // voutr 20
+3690  0  0 // voutr 21
+3692  0  0 // voutr 22
+3694  0  0 // voutr 23
+3696  0  0 // voutr 24
+3649  1023 1 // voutr 0 bias
+3651  1023  1 // voutr 1 bias
+3653  1023  1 // voutr 2 bias
+3655  1023  1 // voutr 3 bias
+3657  1023  1 // voutr 4 bias
+3659  1023  1 // voutr 5 bias
+3661  1023  1 // voutr 6 bias
+3663  1023  1 // voutr 7 bias
+3665  1023  1 // voutr 8 bias
+3667  1023  1 // voutr 9 bias
+3669  1023  1 // voutr 10 bias
+3671  1023  1 // voutr 11 bias
+3673  1023  1 // voutr 12 bias
+3675  1023  1 // voutr 13 bias
+3677  1023  1 // voutr 14 bias
+3679  1023  1 // voutr 15 bias
+3681  1023  1 // voutr 16 bias
+3683  1023  1 // voutr 17 bias
+3685  1023  1 // voutr 18 bias
+3687  1023  1 // voutr 19 bias
+3689  1023  1 // voutr 20 bias
+3691  1023  1 // voutr 21 bias
+3695  1023  1 // voutr 23 bias
+3693  600  1 // voutr 22 bias
+3697  0 1 // voutr 24 bias
+3736  0 1 // outamp 8

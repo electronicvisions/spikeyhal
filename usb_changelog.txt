@@ -1,0 +1,9 @@
+
+REMOVED:
+* all busmodels but -bqp, which will be now playback memory via USB
+  * as a consequence:
+	  - received and transfers file
+		- bool msgqueue: no queues anymore
+* darkwing nr. as an argument in sc_* constructor (not used, anyway?)
+* class SCData
+* sc_slowctrl sdram access functions
