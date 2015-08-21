@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from waflib import Options
+import os
+from waflib import Options, Node
 APPNAME='SpikeyHAL'
 
 
@@ -145,13 +146,14 @@ def build(bld):
         install_path = None,
         )
 
-    # build event loopback for mem leak investigation
-    bld(
-        target       = 'eventLoopForMemTest',
-        features     = 'cxx cxxprogram',
-        source       = ['tools/eventLoopForMemTest.cpp'],
-        use          = 'vmodule_objects logger_obj spikeyhal',
-        install_path = installPathTests,
+    for filename in bld.path.ant_glob('tools/*.cpp'):
+        split = Node.split_path(filename.abspath())
+        bld.program (
+            target = os.path.splitext(split[len(split)-1])[0],
+            features = 'cxx cxxprogram',
+            source = [filename],
+            use = 'vmodule_objects logger_obj spikeyhal',
+            install_path = 'bin'
         )
 
     if bld.env.WITH_PYTHON:
@@ -178,7 +180,6 @@ def build(bld):
 
     #build gtests
     if bld.env.WITH_TEST:
-        import os
         from waflib.extras.gtest import summary
         test_main_filter = ['*Test*']
         bld(

@@ -11,7 +11,7 @@
 
 #include <numeric>
 
-static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("Test.Linksweep");
+static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("Test.LinkSweep");
 
 namespace spikey2
 {
