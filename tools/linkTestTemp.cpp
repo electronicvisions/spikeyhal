@@ -88,16 +88,17 @@ int main(int argc, char* argv[])
 	// test link forever
 	uint delay_fpga = 35;
 	uint counter = 0;
-	uint err = 0;
+	bool err = false;
+	uint err_total = 0;
 	while (true) {
 		counter++;
 
 		int temperature = int(std::round(mem->getSCTRL()->getTemp()));
 
 		uint run;
+		err = false;
 		uint link0_xor = 0, link1_xor = 0;
 		for (run = 0; run < 100; run++) {
-			err = 0;
 			ipat0 = (rand() & 0xff) << 9 | 0x100 | (rand() & 0xff);
 			ipat1 = (rand() & 0xff) << 9 | 0x000 | (rand() & 0xff);
 			ipat2 = (rand() & 0xff) << 9 | 0x100 | (rand() & 0xff);
@@ -124,15 +125,21 @@ int main(int argc, char* argv[])
 				// << ", xor: 0x" << (ipat2^opat2) << std::endl;
 				// std::cout << dec << run << ", ipat3: 0x" << hex << ipat3 << ", opat3: 0x" << opat3
 				// << ", xor: 0x" << (ipat3^opat3) << std::endl << std::endl;;
+
 				link0_xor |= (((ipat0 ^ opat0) & 0x1ff) | (((ipat0 ^ opat0) >> 9) & 0x1ff)) |
 							 (((ipat1 ^ opat1) & 0x1ff) | (((ipat1 ^ opat1) >> 9) & 0x1ff));
 				link1_xor |= (((ipat2 ^ opat2) & 0x1ff) | (((ipat2 ^ opat2) >> 9) & 0x1ff)) |
 							 (((ipat3 ^ opat3) & 0x1ff) | (((ipat3 ^ opat3) >> 9) & 0x1ff));
-				err += number_set_bits(link0_xor);
-				err += number_set_bits(link1_xor);
+				err = true;
+				err_total += number_set_bits(link0_xor);
+				err_total += number_set_bits(link1_xor);
+
+				//binout(std::cout, link0_xor, 9);
+				//binout(std::cout, link1_xor, 9);
+				//cout << " " << err << " " << err_total << endl;
 			}
 		}
-		std::cout << workstation << ", trial " << counter << ", FPGA in: del " << delay_fpga << ", runs: " << run << ", errors: " << (uint)err << std::endl;
+		std::cout << workstation << ", trial " << counter << ", FPGA in: del " << delay_fpga << ", runs: " << run << ", errors: " << err << std::endl;
 
 		std::cout << workstation << ", link0: ";
 		binout(std::cout, link0_xor, 9);
@@ -142,7 +149,7 @@ int main(int argc, char* argv[])
 
 		ofstream outfile;
 		outfile.open(filename_data);
-		outfile << counter << ", " << err << ", " << temperature << std::endl;
+		outfile << counter << ", " << err_total << ", " << temperature << std::endl;
 		outfile.close();
 
 		// set pattern for IOdelay tuning
