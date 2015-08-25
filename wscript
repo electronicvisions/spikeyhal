@@ -5,8 +5,8 @@ APPNAME='SpikeyHAL'
 
 
 def depends(ctx):
-    ctx('symap2ic', 'src/logging')
-    ctx('symap2ic', 'src/pylogging')
+    ctx('logger')
+    ctx('logger', 'pylogging')
     ctx('vmodule')
 
 def options(opt):
