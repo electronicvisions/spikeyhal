@@ -66,7 +66,6 @@ def configure(conf):
     conf.env.TESTMODES= '''
         testmodes/oldmodes.cpp \
         testmodes/tmag_eventhard.cpp \
-        testmodes/tmag_linksweep.cpp \
         testmodes/tmag_loopback.cpp \
         testmodes/tmag_spikeyclass.cpp \
         testmodes/tmag_sctest.cpp
