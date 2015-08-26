@@ -10,11 +10,19 @@
 #include "spikenet.h"
 
 #include <numeric>
+#include <vector>
 
 static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("Tool.LinkTest");
 
 using namespace spikey2;
 uint randomseed = 42;
+
+void bin_bits(uint number_int, std::vector<uint>& err_bits)
+{
+	for(uint i=0; i<err_bits.size(); i++) {
+		err_bits[i] += bool((2 << i) & number_int);
+	}
+}
 
 int number_set_bits(uint number_int)
 {
@@ -87,9 +95,11 @@ int main(int argc, char* argv[])
 
 	// test link forever
 	uint delay_fpga = 35;
-	uint counter = 0;
+	int counter = -1;
 	bool err = false;
 	uint err_total = 0;
+	uint number_bits = 18;
+	std::vector<uint> err_bits(number_bits, 0);
 	while (true) {
 		counter++;
 
@@ -131,14 +141,28 @@ int main(int argc, char* argv[])
 				link1_xor |= (((ipat2 ^ opat2) & 0x1ff) | (((ipat2 ^ opat2) >> 9) & 0x1ff)) |
 							 (((ipat3 ^ opat3) & 0x1ff) | (((ipat3 ^ opat3) >> 9) & 0x1ff));
 				err = true;
-				err_total += number_set_bits(link0_xor);
-				err_total += number_set_bits(link1_xor);
 
 				//binout(std::cout, link0_xor, 9);
 				//binout(std::cout, link1_xor, 9);
 				//cout << " " << err << " " << err_total << endl;
 			}
 		}
+		if(err) {
+			if(counter > 0) { //first run has usually errors; TODO: investigate
+				err_total += number_set_bits(link0_xor);
+				err_total += number_set_bits(link1_xor << (number_bits / 2));
+				bin_bits(link0_xor, err_bits);
+				bin_bits(link1_xor, err_bits);
+			}
+		}
+
+		//check consistency
+		uint err_total_tmp = 0;
+		for(uint i=0; i<err_bits.size(); i++){
+			err_total_tmp += err_bits[i];
+		}
+		assert(err_total_tmp == err_total);
+
 		std::cout << workstation << ", trial " << counter << ", FPGA in: del " << delay_fpga << ", runs: " << run << ", errors: " << err << std::endl;
 
 		std::cout << workstation << ", link0: ";
@@ -149,7 +173,11 @@ int main(int argc, char* argv[])
 
 		ofstream outfile;
 		outfile.open(filename_data);
-		outfile << counter << ", " << err_total << ", " << temperature << std::endl;
+		outfile << counter << ", " << temperature;
+		for(uint i=0; i<err_bits.size(); i++) {
+			outfile << ", " << err_bits[i];
+		}
+		outfile << std::endl;
 		outfile.close();
 
 		// set pattern for IOdelay tuning
