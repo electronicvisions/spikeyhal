@@ -27,7 +27,10 @@ SC_SlowCtrl::SC_SlowCtrl(uint time, std::string workstation)
       T(gsl_rng_default),
       rng(gsl_rng_alloc(T))
 {
-	// get workstation from pynn.setup() argument, workstation file, or load first USB device
+	// get workstation from pynn.setup() argument, environment variable, workstation file, or load first USB device
+	if (workstation == "") {
+		workstation = getWorkstationFromEnvironment();
+	}
 	if (workstation == "") {
 		std::string filenameWorkstation = string(getenv("HOME")) + "/my_stage1_station";
 		workstation = getWorkstationFromFile(filenameWorkstation);
@@ -1394,6 +1397,18 @@ std::string SC_SlowCtrl::getWorkstationFromUsbDevice(Vmoduleusb* device)
 	std::string msg = "Could not find config file for USB device with serial " + serial;
 	LOG4CXX_ERROR(logger, msg);
 	throw std::runtime_error(msg);
+}
+
+std::string SC_SlowCtrl::getWorkstationFromEnvironment()
+{
+	char* my_stage1_station = getenv("MY_STAGE1_STATION");
+	if (my_stage1_station == NULL) {
+		LOG4CXX_DEBUG(logger, "Could not retrieve environment variable MY_STAGE1_STATION");
+		return "";
+	}
+	std::string msg = "Retrieved " + std::string(my_stage1_station) + " from environment variable MY_STAGE1_STATION";
+	LOG4CXX_INFO(logger, msg);
+	return std::string(my_stage1_station);
 }
 
 void SC_SlowCtrl::getConfigFromFile(string filenameConfig)

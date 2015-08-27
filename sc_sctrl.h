@@ -388,6 +388,8 @@ public:
 	std::string getWorkstationFromFile(std::string filenameWorkstation);
 	//! get workstation using serial from USB device and *.cfg files
 	std::string getWorkstationFromUsbDevice(Vmoduleusb* device);
+	//! get workstation from environment variable
+	std::string getWorkstationFromEnvironment();
 	//! get config from file for workstation
 	void getConfigFromFile(std::string filenameConfig);
 	//! get number of delay lines for FPGA
