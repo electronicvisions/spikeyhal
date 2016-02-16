@@ -32,7 +32,7 @@ SC_SlowCtrl::SC_SlowCtrl(uint time, std::string workstation)
 		workstation = getWorkstationFromEnvironment();
 	}
 	if (workstation == "") {
-		std::string filenameWorkstation = string(getenv("HOME")) + "/my_stage1_station";
+		std::string filenameWorkstation = std::string(getenv("HOME")) + "/my_stage1_station";
 		workstation = getWorkstationFromFile(filenameWorkstation);
 	}
 #ifndef WITH_FLANSCH
@@ -1372,7 +1372,8 @@ std::string SC_SlowCtrl::getWorkstationFromUsbDevice(Vmoduleusb* device)
 		LOG4CXX_ERROR(logger, msg);
 		throw std::runtime_error(msg);
 	}
-	boost::filesystem::path folder(spikeyhalpath);
+	std::string configpath = std::string(spikeyhalpath) + "/config";
+	boost::filesystem::path folder(configpath);
 	if (boost::filesystem::exists(folder)) {
 		boost::filesystem::directory_iterator end_itr;
 		for (boost::filesystem::directory_iterator itr(folder); itr != end_itr; itr++) {
@@ -1419,7 +1420,7 @@ void SC_SlowCtrl::getConfigFromFile(string filenameConfig)
 		LOG4CXX_ERROR(logger, msg);
 		throw std::runtime_error(msg);
 	}
-	std::string filenameConfigWithExt = string(folder) + "/" + filenameConfig + ".cfg";
+	std::string filenameConfigWithExt = std::string(folder) + "/config/" + filenameConfig + ".cfg";
 	ifstream configFile(filenameConfigWithExt.c_str());
 
 	if (!configFile) {
