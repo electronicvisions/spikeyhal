@@ -51,8 +51,14 @@ typedef long long int int64_t;
 extern uint randomseed;
 
 
-// helper function that outputs binary numbers
+//! Helper function that outputs binary numbers.
 ostream& binout(ostream& in, uint64_t u, uint max);
+
+//! Convert integer to vector of bits.
+void bin_bits(uint number_int, std::vector<uint>& err_bits);
+
+//! Count number of ones in binary representation.
+int number_set_bits(uint number_int);
 
 // helper function that generates a binary mask from an msb bit definition
 inline uint64_t makemask(uint msb)

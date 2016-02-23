@@ -17,27 +17,12 @@ static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("Tool.LinkTest");
 using namespace spikey2;
 uint randomseed = 42;
 
-void bin_bits(uint number_int, std::vector<uint>& err_bits)
-{
-	for(uint i=0; i<err_bits.size(); i++) {
-		err_bits[i] += bool((2 << i) & number_int);
-	}
-}
-
-int number_set_bits(uint number_int)
-{
-	uint counter = 0;
-	while(number_int) {
-		counter++;
-		number_int = (number_int - 1) & number_int;
-	}
-	return counter;
-}
-
 int main(int argc, char* argv[])
 {
 	/*
 	 * Link test with random data.
+	 * Initially programmed for testing stability of high speed data links
+	 * in dependence of system temperature.
 	 */
 
 	std::string workstation = "";
