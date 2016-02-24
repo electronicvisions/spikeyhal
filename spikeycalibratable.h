@@ -22,10 +22,10 @@ class SpikeyCalibratable : public Spikey
 	friend class ::PySpikey;
 
 public:
-	SpikeyCalibratable(boost::shared_ptr<Spikenet> snet, float clk, uint chipid, int spikeyNr = 0,
+	SpikeyCalibratable(boost::shared_ptr<Spikenet> snet, float clk = 10.0, uint chipid = 0, int spikeyNr = 0,
 	                   string calibfile = "spikeycalib.xml");
-	SpikeyCalibratable(boost::shared_ptr<SpikenetComm> comm, float clk, uint chipid,
-	                   int spikeyNr = 0, string calibfile = "spikeycalib.xml");
+	SpikeyCalibratable(boost::shared_ptr<SpikenetComm> comm, float clk = 10.0, uint chipid = 0, int spikeyNr = 0,
+			           string calibfile = "spikeycalib.xml");
 	virtual ~SpikeyCalibratable(){};
 	boost::shared_ptr<SpikeyVoutCalib> clb;
 

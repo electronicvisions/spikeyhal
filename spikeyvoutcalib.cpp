@@ -359,7 +359,9 @@ bool SpikeyVoutCalib::autoCalibRobust(string calibFile, string filenamePlot,
 	if (filenamePlot != "") {
 		filePlot.open(filenamePlot);
 		if (!filePlot.is_open()) {
-			LOG4CXX_ERROR(logger, "Could not write to vout calib plot file: " << filenamePlot);
+			string msg = "Could not write to vout calib plot file: ";
+			LOG4CXX_ERROR(logger, msg);
+			throw std::runtime_error(msg);
 		}
 	}
 

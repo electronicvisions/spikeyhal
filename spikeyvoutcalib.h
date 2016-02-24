@@ -43,6 +43,10 @@ public:
 	virtual bool
 	autoCalibRobust(string calibFile = "spikeycalib.xml", string filenamePlot = "",
 	                boost::shared_ptr<SpikeyConfig> mycfg = boost::shared_ptr<SpikeyConfig>());
+	// read adc for a set of target values
+	void readVoutValues(uint block, uint voutnr, uint avgRuns, double* targetV, uint n,
+	                    double* mean, double* std, bool msgs = true);
+	void loadConfig(boost::shared_ptr<SpikeyConfig> mycfg){mySpikeyConfig = mycfg;};
 
 private:
 	SpikeyCalibratable* mySpikey;
@@ -55,9 +59,6 @@ private:
 
 	// check calibration and calculate chisq of fitted
 	void checkVoutCalib();
-	// read adc for a set of target values
-	void readVoutValues(uint block, uint voutnr, uint avgRuns, double* targetV, uint n,
-	                    double* mean, double* std, bool msgs = true);
 
 	// ******* Fitting & helper stuff *******
 	// find first value breaking a threshold value right (reverse) of mid in array values of length
