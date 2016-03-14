@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
 	sp->clb->loadConfig(cfg); // use this config also for vout readout
 
 	// allowed parameter range
-	double maxLimit = 1.2;
-	double minLimit = 0.8;
+	double maxLimit = 1.1;
+	double minLimit = 0.9;
 
 	double* xvals = new double[1];
 	double* yvals = new double[1];
@@ -58,7 +58,8 @@ int main(int argc, char* argv[])
 	outfile.open("read_vouts_" + workstation + ".dat");
 
 	for (uint b = 0; b < SpikeyConfig::num_blocks; ++b) {
-		for (uint n = 0; n < PramControl::num_vout_adj; ++n) {
+		//for (uint n = 0; n < PramControl::num_vout_adj; ++n) {
+		for (uint n = 0; n < 10; ++n) {
 			sp->clb->readVoutValues(b, n, 10, xvals, 1, yvals, yweights, true);
 
 			outfile << b << " " << n << " " << yvals[0] << " " << yweights[0];
