@@ -1,5 +1,4 @@
 #include "common.h"
-#include <stdexcept>
 
 // communication
 #include "idata.h"

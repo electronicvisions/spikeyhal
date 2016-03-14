@@ -19,6 +19,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <numeric>
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/pointer_cast.hpp>
