@@ -19,7 +19,7 @@ TEST(HWTest, linkSweep)
 {
 	/*
 	 * Sweep FPGA input delays and test with random data.
-	 * TODO: add asserts
+	 * TODO: test only delay specified in config/stationXXX.cfg file and add asserts
 	 */
 	boost::shared_ptr<SpikenetComm> bus(new SC_Mem()); // playback memory interface
 	boost::shared_ptr<Spikenet> chip(new Spikenet(bus));

@@ -20,8 +20,9 @@ uint randomseed = 42;
 int main(int argc, char* argv[])
 {
 	/*
-	 * Link test with random data.
-	 * Initially programmed for testing stability of high speed data links.
+	 * Calibration of high speed data links.
+	 * TODO: detect first sufficiently large interval of delay values without transmission errors
+	 *       then, calibration result is center of this interval
 	 */
 
 	// ##### begin init
@@ -167,7 +168,7 @@ int main(int argc, char* argv[])
 			assert(!(link1_and != 0 || link1_or != ((1 << number_bits_per_link) - 1)));
 		}
 
-		//TODO: continue here
+		//TODO: calibrate high speed data links here
 		if(delay_fpga > 60){
 			calib_success = true;
 		}

@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
 {
 	/*
 	 * Reads out all vouts, e.g. used for testing of bonding.
+	 * TODO: convert to gtest and mv to folder ../tests
 	 */
 
 	boost::shared_ptr<SpikenetComm> bus = boost::shared_ptr<SC_Mem>(new SC_Mem()); // playback memory interface
