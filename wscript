@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from waflib import Options, Node
+from waflib import Options, Node, Utils
 APPNAME='SpikeyHAL'
 
 
@@ -176,6 +176,13 @@ def build(bld):
             use          = 'vmodule_objects logger_obj spikeyhal getch',
             install_path = installPathTests,
         )
+
+    bld.install_files(
+            '${PREFIX}/bin',
+            'tools/scvisual.py',
+            chmod=Utils.O755,
+    )
+
 
     #build gtests
     if bld.env.WITH_TEST:
