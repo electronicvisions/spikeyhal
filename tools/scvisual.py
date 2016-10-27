@@ -7,13 +7,16 @@
 # # #                                                           # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+import scparse as sc
+from scparse import Driver, Neuron   # for plotting the legend
+
 # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # HARDWARE PARAMETERS # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # #
 
-nBlock = 2
-nDrvPerBlock = 256
-nNeuronPerBlock = 192
+nBlock = sc.nBlock
+nDrvPerBlock = sc.nDrvPerBlock
+nNeuronPerBlock = sc.nNeuronPerBlock
 
 
 # # # # # # # # # # # # # # # # # # # # # #
@@ -27,7 +30,8 @@ parser = argparse.ArgumentParser(description="Visualization of the Spikey chip's
                      formatter_class=argparse.RawDescriptionHelpFormatter,
                      epilog="IPYTHON: In combination with ipython, you may have to add '--' for\n\
          correct argument parsing and select ipython's mpl backend, e.g.:\n\
-         $ ipython -i -- scvisual.py -b GTKAgg [other argumens]\n ")
+         $ ipython -i -- scvisual.py -b GTKAgg [other argumens]\n\n\
+TOOL TIPS: Details on neurons and synapse drivers are currently available with the GTKAgg backend, only.")
 # input argument
 parser.add_argument('-i', '--conf', metavar='FILE', default="spikeyconfig.out", dest="srcfile",
                     help="File to visualize (default: 'spikeyconfig.out')")
@@ -40,9 +44,16 @@ parser.add_argument('-r', '--dpi', metavar='DPI', default=600, type=int, dest="D
 # backend argument
 parser.add_argument('-b', '--backend', metavar='BACKEND', default="GTKAgg", dest="MPLBACKEND",
                     help="select matplotlib backend (default: GTKAgg)")
+# zoom argument
+parser.add_argument('-z', '--zoom', metavar='FACTOR', default=1.0, type=float, dest="ZOOM",
+                    help="scale the figure size on screen (default: 1.0)")
 # verbose argument
 parser.add_argument('-v', '--verbose', action='store_true', default=False, dest='VERBOSE',
                     help="Verbose output")
+# chip argument
+parser.add_argument('-c', '--chip', action='store_true', default=False, dest="CHIP",
+                    help="Display and image of the chip")
+
 # version argument
 parser.add_argument('--version', action='version', version="You're driving 'SCV 1'.")
 args = parser.parse_args()
@@ -52,6 +63,8 @@ pngfile = args.pngfile          # png file name OR None (= do not save to file)
 VERBOSE = args.VERBOSE
 DPI = args.DPI
 MPLBACKEND = args.MPLBACKEND
+ZOOM = args.ZOOM
+CHIP = args.CHIP
 PLOT = True                     # True or False (= only parse spikeyconfig.out file)
 
 
@@ -62,6 +75,8 @@ PLOT = True                     # True or False (= only parse spikeyconfig.out f
 if VERBOSE: print " > Selected matplotlib backend: %s" % MPLBACKEND
 import matplotlib
 matplotlib.use(MPLBACKEND)
+
+if VERBOSE: print " > Zoom is %.1f" % ZOOM
 
 import numpy as np
 import pylab as pl
@@ -84,9 +99,25 @@ cElectrode = namedColor('wheat')
 # # # # # # # MATPLOTLIB SETTINGS # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # #
 
+# try to determine screen resoulution in dpi
+try:
+    import subprocess
+    p = subprocess.Popen("xrandr --current | awk -F '[ x+]' '/primary/{print $4}'", shell=True, stdout=subprocess.PIPE)
+    text = p.stdout.read()
+    widthpix = float(text.strip())
+    p = subprocess.Popen("xrandr --current | awk -F ') |mm' '/primary/{print $2}'", shell=True, stdout=subprocess.PIPE)
+    text = p.stdout.read()
+    widthmm = float(text.strip())
+    widthinch = 0.0393701 * widthmm
+    screendpi = widthpix / widthinch
+    assert 60 < screendpi < 400              # reasonable?
+except:
+    screendpi = 90.             # should roughly fit most monitors
+
+
 mpl_config = {
     'axes' : dict(labelsize=8, titlesize=8, linewidth=0.5),
-    'figure' : dict(dpi=86.4, facecolor='white'),
+    'figure' : dict(dpi=screendpi * ZOOM, facecolor='white'),
     'figure.subplot' : dict(left=0.15, bottom=0.15, right=0.97, top=0.97),
     'font' : {'family' : 'sans-serif', 'size' : 8, 'weight' : 'normal',
               'sans-serif' : ['Arial', 'LiberationSans-Regular', 'FreeSans']},
@@ -169,72 +200,6 @@ def generate_weight_cmap():
   return mycmap
 
 
-# # # # # # # # # # # # # # # # # # # # # # # #
-# # C O R E   D A T A   S T R U C T U R E S # #
-# # # # # # # # # # # # # # # # # # # # # # # #
-
-class Neuron(object):
-  def __init__(self, id):
-    self.id = int(id)
-    self.block = self.id / nNeuronPerBlock
-    self.blockid = self.id % nNeuronPerBlock
-    self.initialized = False
-    self.recspike = False
-    self.recmembrane = False
-
-  def set_config(self, bitstring):
-    bitstring = bitstring.strip()
-    assert len(bitstring) == 4, "Bitstring of neuron %d must have len 4." % self.id
-    bs = np.array([int(b) for b in bitstring])[::-1]       # reversed: idx de facto from right to left
-    if bs[1] == 1: # record membrane potential
-      self.recmembrane = True
-    if bs[2] == 1: # record spikes
-      self.recspike = True
-    self.initialized = True
-
-
-class Driver(object):
-  def __init__(self, id):
-    self.id = int(id)
-    self.block = self.id / nDrvPerBlock
-    self.blockid = self.id % nDrvPerBlock
-    self.initialized = False
-    self.srctype = None         # "ext", "block0", "block1"
-    self.srcid = None           # None for ext, int otherwise
-    self.stp = None             # "static", "dep", "fac"
-    self.excinh = None          # "exc", "inh"
-
-  def set_config(self, bitstring):
-    bitstring = bitstring.strip()
-    assert len(bitstring) == 8, "Bitstring of drv %d must have len 8." % self.id
-    # C4 C2  STPMODE       STPONOFF     INH  EXC  SAMEOTHER        RECEXT
-    # -  -   0:fac 1:dep   0:off 1:on   0/1  0/1  0:other 1:same   0:ext 1:rec
-    bs = np.array([int(b) for b in bitstring])[::-1]       # reversed: idx de facto from right to left
-    if bs[0] == 0:  # external
-      self.srctype = "ext"
-    elif bs[0] == 1:  # recurrent
-      if bs[1] == 1:  # this block
-        self.srctype = "block" + str(self.block)
-        self.srcid = (self.block % 2) * nNeuronPerBlock +  self.blockid
-      elif bs[1] == 0: # other block
-        self.srctype = "block" + str((self.block + 1) % nBlock)
-        self.srcid = ((self.block + 1) % 2) * nNeuronPerBlock + self.blockid + (2 * ( (1 + self.blockid) % 2 ) - 1)   # drv lines are twisted across chip halves!
-    if bs[2] == 1: # exc
-      self.excinh = "exc"
-      assert bs[3] == 0, "Error: Driver %d is both exc and inh." % self.id
-    if bs[3] == 1: # inh
-      self.excinh = "inh"
-      assert bs[2] == 0, "Error: Driver %d is both exc and inh." % self.id
-    if bs[4] == 1: # stp
-      if bs[5] == 0: # fac
-        self.stp = 'fac'
-      else:
-        self.stp = 'dep'
-    else:
-      self.stp = 'static'
-    self.initialized = True
-
-
 # # # # # # # # # # # # # # # # # # #
 # # # CORE PLOTTING FUNCTIONS # # # #
 # # # # # # # # # # # # # # # # # # #
@@ -249,12 +214,13 @@ def draw_neuron(nrn, ax, dy=0., escale=1., txtdx=0., forcefb=None):
     x0 = float(nrn.blockid)
   # neuron box
   fc = np.array({0 : cBlock0, 1 : cBlock1}[nrn.block])
-  kwargs = dict(lw=0.1, ec='k', fc=fc, zorder=2, boxstyle="round,pad=0.2")
+  kwargs = dict(lw=0.1, ec='k', fc=fc, zorder=2, boxstyle="round,pad=0.2", picker=True)
   p = FancyBboxPatch((x0-0.25, y0), 0.5, 2., **kwargs)
   ax.add_patch(p)
+  p.data_origin = nrn
   # neuron index
   kwargs = dict(fontsize=1.3, rotation=90, va='center', ha='center', rasterized=True, zorder=3, clip_on=True)
-  dx = {0 : +0.1, 1 : -0.1 }[nrn.block] + txtdx
+  dx = {0 : -0.1, 1 : +0.1 }[nrn.block] + txtdx
   x, y = x0+dx, -1.3+dy
   ax.text(x, y, str(nrn.id), **kwargs)
   # small connector
@@ -283,7 +249,7 @@ def draw_neuron(nrn, ax, dy=0., escale=1., txtdx=0., forcefb=None):
 def draw_driver(drv, ax):
   xy = np.array([(0.,0.), (-0.5, -0.45), (-1.25,-0.45), (-1.25,0.45), (-0.5,0.45)])
   # other block driver?
-  if drv.block == 1:
+  if drv.block == 0:
     xy[:,0] *= -1
   xy[:,1] += drv.blockid
   fc = np.array(dict(exc=cExc, inh=cInh)[drv.excinh])
@@ -292,7 +258,7 @@ def draw_driver(drv, ax):
   ax.add_patch(patch)
   # patch with src-color
   xy = np.array([(-1.25,-0.45), (-3., -0.45), (-3.,0.45), (-1.25,0.45)])
-  if drv.block == 1:
+  if drv.block == 0:
     xy[:,0] *= -1
   xy[:,1] += drv.blockid
   fc = np.array(dict(ext=cExt, block0=cBlock0, block1=cBlock1)[drv.srctype])
@@ -302,12 +268,12 @@ def draw_driver(drv, ax):
   # small line for rec conn and srcid
   if drv.srctype != "ext":
     x = np.array([-3.5, -3])
-    if  drv.block == 1:
+    if  drv.block == 0:
       x *= -1
     ax.plot(x, [drv.blockid]*2, 'k', lw=0.1)
     kwargs = dict(fontsize=1.3, va='center', ha='center', rasterized=True, zorder=2, clip_on=True)
     x = -2.25
-    if drv.block == 1:
+    if drv.block == 0:
       x = 2.25
     ax.text(x, drv.blockid, str(drv.srcid), **kwargs)
   # short term plasticity
@@ -315,7 +281,7 @@ def draw_driver(drv, ax):
     text = dict(fac="F", dep="D", static="S")[drv.stp]
     kwargs = dict(fontsize=1.5, va='center', ha='center', zorder=2, clip_on=True)
     x = -0.875
-    if drv.block == 1:
+    if drv.block == 0:
       x *= -1
     ax.text(x, drv.blockid, text, **kwargs)
 
@@ -326,7 +292,7 @@ def draw_driver(drv, ax):
 
 def draw_legend():
   ax = axes['LEG']
-  txtkwargs = dict(x=1., fontsize=10., va='center', ha='left')
+  txtkwargs = dict(x=4.0, fontsize=10., va='center', ha='left')
   # C4 C2  STPMODE       STPONOFF     INH  EXC  SAMEOTHER        RECEXT
   # -  -   0:fac 1:dep   0:off 1:on   0/1  0/1  0:other 1:same   0:ext 1:rec
   # drivers
@@ -351,10 +317,10 @@ def draw_legend():
   ax = axes['LEGN']
   nrn = Neuron(28)
   nrn.set_config('0010')
-  draw_neuron(nrn, ax, dy=3.5, escale=0.3, forcefb=False)
+  draw_neuron(nrn, ax, dy=3.5, escale=0.3, txtdx=0.2, forcefb=False)
   nrn = Neuron(nNeuronPerBlock+41)
   nrn.set_config('0100')
-  draw_neuron(nrn, ax, dy=3.5, txtdx=0.2, forcefb=True)
+  draw_neuron(nrn, ax, dy=3.5, txtdx=0., forcefb=True)
   # resize text
   for ch in ax.get_children():
     if isinstance(ch, pl.Text):
@@ -367,73 +333,6 @@ def draw_legend():
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # D A T A   L O A D   F U N C T I O N S # # #
-# # # # # # # # # # # # # # # # # # # # # # # # #
-
-def load_neuron_config(X, neuron):
-  if VERBOSE: print " > Loading neuron configuration."
-  for ln,x in enumerate(X):
-    if "ud_colconfig" in x:
-      if VERBOSE: print " > Start of neuron config detected at line %d." % (ln+2)
-      break
-  for i in xrange(nBlock * nNeuronPerBlock):
-    try: # test next line
-      _,nid,_,bitstring = X[ln+1].strip().split(' ')
-      if int(nid) == i: # next line holds config
-        ln += 1 # set next line as current
-    except:
-      pass # nothing to be done
-    _,nid,_,bitstring = X[ln].strip().split(' ')
-    if VERBOSE: print "   > Neuron %3d set to '%s' (from line %d)." % (i, bitstring, ln+1)
-    nrn = Neuron(i)
-    nrn.set_config(bitstring)
-    neuron[nrn.block, nrn.blockid] = nrn
-  if VERBOSE: print " > Neuron configuration loaded."
-
-
-def load_driver_config(X, driver):
-  if VERBOSE: print " > Loading synapse driver configuration."
-  for ln,x in enumerate(X):
-    if "ud_rowconfig" in x:
-      if VERBOSE: print " > Start of syndriver config detected at line %d." % (ln+2)
-      break
-  for i in xrange(nBlock * nDrvPerBlock):
-    try: # test next line
-      _,sid,_,bitstring = X[ln+1].strip().split(' ')
-      if int(sid) == i: # next line holds config
-        ln += 1 # set next line as current
-    except:
-      pass # nothing to be done
-    _,sid,_,bitstring = X[ln].strip().split(' ')
-    if VERBOSE: print "   > Driver %3d set to '%s' (from line %d)." % (i, bitstring, ln+1)
-    drv = Driver(i)
-    drv.set_config(bitstring)
-    driver[drv.block, drv.blockid] = drv
-  if VERBOSE: print " > Synapse driver configuration loaded."
-
-
-def load_weight_matrix(X, W):
-  for ln,x in enumerate(X):
-    if "ud_weight" in x:
-      if VERBOSE: print " > Start of weight matrix detected at line %d." % (ln+2)
-      ln += 1  # afterwards ln points to first line with syndrv config
-      break
-  for i in xrange(nBlock*nNeuronPerBlock):
-    x = X[ln+i].strip()
-    assert i == int(x[2:5])
-    W[i] = [int(w, 16) for w in x[6:].split(' ')]
-  W0 = np.zeros((nNeuronPerBlock, nDrvPerBlock), dtype=int)
-  W1 = np.zeros((nNeuronPerBlock, nDrvPerBlock), dtype=int)
-  sdict = dict(exc=+1, inh=-1)
-  for i,((drv0,drv1),w) in enumerate(zip(driver.T, W.T)):
-    s0, s1 = sdict[drv0.excinh], sdict[drv1.excinh]
-    W0[:,i] = s0 * w[:nNeuronPerBlock]
-    W1[:,i] = s1 * w[nNeuronPerBlock:]
-  if VERBOSE: print " > Weight matrix loaded."
-  return W0, W1
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # M A I N # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -441,24 +340,11 @@ apply_mpl_settings(mpl_config)
 
 print " > Load Spikey configuration from '%s'." % srcfile
 
-f = open(srcfile)
-X = f.readlines()
+SC = sc.SpikeyConfig(srcfile, VERBOSE)
 
-# parse neuron config
-neuron = np.zeros((nBlock, nNeuronPerBlock), dtype=object)
-load_neuron_config(X, neuron)
-
-# parse synapse driver config
-driver = np.zeros((nBlock, nDrvPerBlock), dtype=object)
-load_driver_config(X, driver)
-
-# parse weight matrix
-W = np.zeros((nBlock*nNeuronPerBlock, nDrvPerBlock), dtype=int)
-W0, W1 = load_weight_matrix(X, W)
-
-f.close()
-
-if VERBOSE: print " > Spikey configuration loaded."
+neuron = SC.neuron
+driver = SC.driver
+W0, W1 = SC.W0, SC.W1
 
 
 # plotting
@@ -468,6 +354,10 @@ if PLOT:
   # setup figure and axes
   w,h = 12., 7.5
   fig = pl.figure(figsize=(w,h))
+  try:
+    pl.get_current_fig_manager().set_window_title("SCVisual: %s" % srcfile)
+  except:
+    pass
   w,h = fig.get_figwidth(),fig.get_figheight()
   rfig = w/h
   w = 0.39
@@ -477,32 +367,33 @@ if PLOT:
   rect = np.array((0.10,0.02,0.80,0.08))
   axes['LEGS'] = fig.add_axes(rect+(0.007,-0.01,0,0), xlim=(-5., (80./8.)*4.*rfig - 5.), ylim=(-0.5,4-0.5),\
                              axis_bgcolor='0.85', xticks=[], yticks=[], aspect='equal')
-  axes['LEG'] = fig.add_axes(rect, xlim=(-4.5, (80./8.)*3.6*rfig - 4.5), ylim=(-0.8,2.8),\
+  axes['LEG'] = fig.add_axes(rect, xlim=(-0.5, (80./8.)*3.6*rfig - 0.5), ylim=(-0.8,2.8),\
                              axis_bgcolor='0.95', xticks=[], yticks=[], aspect='equal')
   f = 1.35
   axes['LEGN'] = fig.add_axes(rect, xlim=(-5.5*f, (80./8.)*3.6*rfig*f - 5.5*f), ylim=(-0.8*f,2.8*f),\
                              frame_on=False, xticks=[], yticks=[], aspect='equal')
-  rect = 0.10,b,w,h
-  axes['WL'] = fig.add_axes(rect, xlim=(-0.5,nNeuronPerBlock-0.5), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal')
-  rect = 0.90-w,b,w,h
-  axes['WR'] = fig.add_axes(rect, xlim=(nNeuronPerBlock-0.5,-0.5), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal')
+  rect = 0.04,b,w,h
+  axes['WL'] = fig.add_axes(rect, xlim=(nNeuronPerBlock-0.5,-0.5), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal')
+  rect = 0.96-w,b,w,h
+  axes['WR'] = fig.add_axes(rect, xlim=(-0.5,nNeuronPerBlock-0.5), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal')
   wd = h * 3.7/256. / rfig
-  rect = 0.10-wd,b,wd,h
-  axes['DL'] = fig.add_axes(rect, xlim=(-3.6,0.1), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal', sharey=axes['WL'])
-  rect = 0.90,b,wd,h
-  axes['DR'] = fig.add_axes(rect, xlim=(-0.1,3.6), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal', sharey=axes['WR'])
+  rect = 0.432,b,wd,h
+  axes['DL'] = fig.add_axes(rect, xlim=(-0.1,3.6), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal', sharey=axes['WL'])
+  rect = 0.57-wd,b,wd,h
+  axes['DR'] = fig.add_axes(rect, xlim=(-3.6,0.1), ylim=(-0.5,nDrvPerBlock-0.5), aspect='equal', sharey=axes['WR'])
   rect = 0.745,0.065,0.13,0.02
   axes['CB'] = fig.add_axes(rect)
   hn = w * 4.1/192. * rfig
-  rect = 0.10,b-hn,w,hn
-  axes['NL'] = fig.add_axes(rect, xlim=(-0.5,nNeuronPerBlock-0.5), ylim=(-4.1,0), aspect='equal', sharex=axes['WL'])
-  rect = 0.90-w,b-hn,w,hn
-  axes['NR'] = fig.add_axes(rect, xlim=(nNeuronPerBlock-0.5,-0.5), ylim=(-4.1,0), aspect='equal', sharex=axes['WR'])
+  rect = 0.04,b-hn,w,hn
+  axes['NL'] = fig.add_axes(rect, xlim=(nNeuronPerBlock-0.5,-0.5), ylim=(-4.1,0), aspect='equal', sharex=axes['WL'])
+  rect = 0.96-w,b-hn,w,hn
+  axes['NR'] = fig.add_axes(rect, xlim=(-0.5,nNeuronPerBlock-0.5), ylim=(-4.1,0), aspect='equal', sharex=axes['WR'])
   #
   if False:             # stop plotting during legend design
     draw_legend()
     import sys
     sys.exit()
+    pl.show()
   draw_legend()
   # plot weight matrix
   wcmap = generate_weight_cmap()
@@ -532,8 +423,9 @@ if PLOT:
   # make labels of weight matrix invisible (must be done afterwards due to sharex/y)
   pl.setp(axes['WL'].get_xticklabels(), visible=False)
   pl.setp(axes['WR'].get_xticklabels(), visible=False)
-  pl.setp(axes['WL'].get_yticklabels(), visible=False)
-  pl.setp(axes['WR'].get_yticklabels(), visible=False)
+  axes['WR'].yaxis.tick_right()
+  pl.setp(axes['DL'].get_yticklabels(), visible=False)
+  pl.setp(axes['DR'].get_yticklabels(), visible=False)
   # correct labeling (nrn and drv numbers) in right block
   axes['NR'].set_xticklabels(axes['NR'].get_xticks() + nNeuronPerBlock)
   axes['DR'].set_yticklabels(axes['DR'].get_yticks() + nDrvPerBlock)
@@ -542,6 +434,23 @@ if PLOT:
   spines = ('top', 'bottom', 'left', 'right')
   for s in spines:
     ax.spines[s].set_visible(False)
+  # Chip photo
+  if CHIP:
+      figchip = pl.figure(figsize=(5,5))
+      ax = figchip.add_axes((0.01,0.01,0.98,0.98), frame_on=False, xticks=[], yticks=[])
+      import matplotlib.image as mpimg
+      import os
+      script_path = os.path.dirname(os.path.abspath( __file__ ))
+      try:
+#          print script_path + "/../lib/spikey_gold_label_medium.png"
+          img=mpimg.imread(script_path + "/../lib/spikey_gold_label_medium.png")
+          imgplot = ax.imshow(img)
+      except:
+          try:
+              img=mpimg.imread("spikey_gold_label_medium.png")
+              imgplot = ax.imshow(img)
+          except:
+              print " > WARNING: Photo of chip not found!"
   # show the plot
   pl.interactive(True)
   pl.show()
@@ -567,9 +476,9 @@ def update_driver_axes(ax_w, ax_d, wname): # driver and weight axes, wname is 'W
     h = y1 - y0
     wd = h * 3.7 / (ymax-ymin) / rfig
     if wname == 'WL':
-      rect = 0.10-wd,y0,wd,h
+      rect = 0.432,y0,wd,h
     elif wname == 'WR':
-      rect = 0.90,y0,wd,h
+      rect = 0.57-wd,y0,wd,h
     ax_d.set_position(rect)
     # resize text
     for ch in ax_d.get_children():
@@ -588,9 +497,9 @@ def update_neuron_axes(ax_w, ax_n, wname): # neuron and weight axes, wname is 'W
     hn = w * 4.1 / abs(xmax-xmin) * rfig
     b = ax_w.get_position().y0
     if wname == 'WL':
-      rect = 0.10,b-hn,w,hn
+      rect = 0.04,b-hn,w,hn
     elif wname == 'WR':
-      rect = 0.90-w,b-hn,w,hn
+      rect = 0.96-w,b-hn,w,hn
     ax_n.set_position(rect)
     # resize text
     for ch in ax_n.get_children():
@@ -614,8 +523,77 @@ def on_draw(event):
   PAUSING = False
   pl.draw()
 
+
+def set_neuron_tooltip(nrn):
+    mng = pl.get_current_fig_manager()
+    s = "<tt><b>Neuron %d </b>" % nrn.id
+    ap = SC.AP['nrn'][nrn.id]
+    s += "\nIndividual parameters"
+    s += "\n  Ileak: %s\n  Icb: %s" % (ap['ileak'], ap['icb'])
+    s += "\nShared parameters (%s, %s)" %({0:'left', 1:'right'}[nrn.block], {0:'even', 1:'odd '}[nrn.blockid % 2])
+    voutbaseidx = dict(inh=0, rest=2, reset=4, exc=6, thresh=16)
+    # TODO: Check so-called block swapping of vout values! [1st check looks okay]
+    get_vout = lambda key, nrn: SC.AP['vout'][nrn.block][voutbaseidx[key] + (nrn.blockid % 2)]
+    get_voutbias = lambda key, nrn: SC.AP['voutbias'][nrn.block][voutbaseidx[key] + (nrn.blockid % 2)]
+    for key in ('exc', 'thresh', 'rest', 'reset', 'inh'):
+        s += "\n  %s: %s (bias: %s)" % (key.capitalize(), get_vout(key, nrn), get_voutbias(key, nrn))
+    s += "</tt>"
+    mng.window.set_tooltip_markup(s)
+
+
+def set_driver_tooltip(drv):
+    mng = pl.get_current_fig_manager()
+    s = "<tt><b>Driver %d </b>" % drv.id
+    ap = SC.AP['drv'][drv.id]
+    s += "\nIndividual parameters"
+    for key in ('drviout','adjdel','drvifall','drvirise'):
+        s += "\n  %s: %s " % (key.capitalize(), ap[key])
+    STPnames = dict(static="No short-term plasticity", fac="Short-term facilitation", dep="Short-term depression")
+    s += "\n  %s" % STPnames[drv.stp]
+    s += "\n  STP per AP (C2/C1): %d/8" % drv.C2
+    s += "\nShared parameters (%s, %s)" %({0:'left', 1:'right'}[drv.block], {False:'lower 128', True:'upper 128'}[drv.blockid >= 128])
+    voutbaseidx = dict(vfac=12, vstdf=14)
+    get_vout = lambda key, drv: SC.AP['vout'][drv.block][voutbaseidx[key] + int(drv.blockid >= 128)]
+    get_voutbias = lambda key, drv: SC.AP['voutbias'][drv.block][voutbaseidx[key] + + int(drv.blockid >= 128)]
+    for key in ('vstdf', 'vfac'):
+        s += "\n  %s: %s (bias: %s)" % (key.capitalize(), get_vout(key, drv), get_voutbias(key, drv))
+    biasbbaseidx = dict(vdtc=0, vcb=4, vplb=8)
+    get_biasb = lambda key, drv: SC.AP['biasb'][biasbbaseidx[key] + (2 * drv.block) +  int(drv.blockid >= 128)]
+    for key in ('vdtc', 'vcb', 'vplb'):
+        s += "\n  %s: %s" % (key.capitalize(), get_biasb(key, drv))
+    s += "\nGlobal parameters"
+    s += "\n  VREST: %s\n  VSTART: %s" % (SC.DP['vrest'], SC.DP['vstart'])
+    s += "</tt>"
+    mng.window.set_tooltip_markup(s)
+
+
+def on_hover(event):
+    mng = pl.get_current_fig_manager()
+    mng.window.set_tooltip_text(None)
+    if event.inaxes in (axes['NL'], axes['NR']):
+        block = {axes['NL'] : 0, axes['NR'] : 1 }[event.inaxes]
+        blockid = int(round(event.xdata))
+        nrn = neuron[block, blockid]
+        set_neuron_tooltip(nrn)
+    elif event.inaxes in (axes['DL'], axes['DR']):
+        block = {axes['DL'] : 0, axes['DR'] : 1 }[event.inaxes]
+        blockid = int(round(event.ydata))
+        drv = driver[block, blockid]
+        set_driver_tooltip(drv)
+        #mng.window.set_tooltip_markup("<b>ID %d</b>" % driver[block, blockid].id)
+
 # connect event handler
 connect_id_draw = fig.canvas.mpl_connect('draw_event', on_draw)
+connect_id_motion = fig.canvas.mpl_connect('motion_notify_event', on_hover)
+
+# set coodinate formatting in footer
+axes['WL'].format_coord = lambda x,y: "(POST NEURON, PRE DRIVER) = (%03d, %03d)    Digital weight value" % (int(round(x)), int(round(y)))
+axes['WR'].format_coord = lambda x,y: "(POST NEURON, PRE DRIVER) = (%03d, %03d)    Digital weight value" % (int(nNeuronPerBlock + round(x)), int(nDrvPerBlock + round(y)))
+axes['NL'].format_coord = lambda x,y: "NEURON %03d" % int(round(x))
+axes['NR'].format_coord = lambda x,y: "NEURON %03d" % int(nNeuronPerBlock + round(x))
+axes['DL'].format_coord = lambda x,y: "DRIVER %03d" % int(round(y))
+axes['DR'].format_coord = lambda x,y: "DRIVER %03d" % int(nDrvPerBlock + round(y))
+
 
 def on_close(event):
   #fig.canvas.mpl_disconnect(connect_id_draw)

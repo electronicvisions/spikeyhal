@@ -183,6 +183,17 @@ def build(bld):
             chmod=Utils.O755,
     )
 
+    bld.install_files(
+            '${PREFIX}/lib',
+            'tools/scparse.py',
+            chmod=Utils.O755,
+    )
+
+    bld.install_files(
+            '${PREFIX}/lib',
+            'tools/spikey_gold_label_medium.png',
+            chmod=Utils.O644,
+    )
 
     #build gtests
     if bld.env.WITH_TEST:
