@@ -149,6 +149,7 @@ BOOST_PYTHON_MODULE(pyhal_c_interface_s1v2)
 	    .def("setIcb", &PySpikeyConfig::setIcb)
 	    .def("setSTDPParams", &PySpikeyConfig::setSTDPParams)
 	    .def_readwrite("biasb", &PySpikeyConfig::biasb)
+	    .def_readwrite("vout", &PySpikeyConfig::vout)
 	    .def_readwrite("voutbias", &PySpikeyConfig::voutbias)
 	    .def_readwrite("vm", &PySpikeyConfig::vm)
 	    .def_readonly("weight", &PySpikeyConfig::weight_wrapper);
