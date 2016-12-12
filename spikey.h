@@ -134,7 +134,7 @@ inline double Spikey::convDacCur(uint dac)
 {
 	if (dac >= 1024)
 		dac = 1023;
-	double current = dac / 1024.0 * dacimax;
+	double current = dac / 1023.0 * dacimax;
 	return current;
 }
 
