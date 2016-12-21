@@ -31,6 +31,8 @@ public:
 	void setIcb(int neuronIndex, float value);
 	void setSTDPParams(float vm, int tpcsec, int tpcorperiod, float vclra, float vclrc,
 	                   float vcthigh, float vctlow, float adjdel);
+	float getILeak(int neuronIndex);
+	float getIcb(int neuronIndex);
 	void clearConfig();
 	void clearColConfig();
 	void clearRowConfig();

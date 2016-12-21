@@ -314,10 +314,23 @@ void PySpikeyConfig::setILeak(int neuronIndex, float value)
 	this->neuron[neuronIndex].ileak = value;
 }
 
+
+float PySpikeyConfig::getILeak(int neuronIndex)
+{
+  return this->neuron[neuronIndex].ileak;
+}
+
+
 void PySpikeyConfig::setIcb(int neuronIndex, float value)
 {
 	// cout << "setting iLeak to " << value << endl;
 	this->neuron[neuronIndex].icb = value;
+}
+
+
+float PySpikeyConfig::getIcb(int neuronIndex)
+{
+  return this->neuron[neuronIndex].icb;
 }
 
 
