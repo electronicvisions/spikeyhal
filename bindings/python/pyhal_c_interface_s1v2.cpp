@@ -121,7 +121,7 @@ BOOST_PYTHON_MODULE(pyhal_c_interface_s1v2)
 	//! python access to stl vectors of double vectors
 	class_<std::vector<std::vector<double>>>("vectorVectorDouble")
 	    .def(vector_indexing_suite<std::vector<std::vector<double>>>());
-
+	
 #ifndef WITHOUT_HARDWARE
 	//! python access to spike trains
 	class_<PySpikeTrain>("SpikeTrain")
@@ -151,6 +151,7 @@ BOOST_PYTHON_MODULE(pyhal_c_interface_s1v2)
 	         boost::python::arg("drvifall")   = std::numeric_limits<float>::quiet_NaN(),
 	         boost::python::arg("drvirise")   = std::numeric_limits<float>::quiet_NaN(),
 	         boost::python::arg("adjdel")     = std::numeric_limits<float>::quiet_NaN()))
+	    .def("getSynapseDriver", &PySpikeyConfig::getSynapseDriver)
 	    .def("setWeights", &PySpikeyConfig::setWeights)
 	    .def("setVoltages", &PySpikeyConfig::setVoltages)
 	    .def("setVoltageBiases", &PySpikeyConfig::setVoltageBiases)

@@ -285,6 +285,21 @@ void PySpikeyConfig::setSynapseDriver(int driverIndex, int sourceType, int sourc
 }
 
 
+boost::python::tuple PySpikeyConfig::getSynapseDriver(int driverIndex)
+{
+	if (synapseConfigured[driverIndex] == false) {
+		PyErr_SetString(PyExc_AttributeError, "Can not read parameters before initialization."
+		                                      "Use setSynapseDriver() for first configuration.");
+		py::throw_error_already_set();
+	}
+	return boost::python::make_tuple(synapse[driverIndex].drviout,
+	                                 synapse[driverIndex].drvifall,
+	                                 synapse[driverIndex].drvirise,
+	                                 synapse[driverIndex].adjdel
+	);
+}
+
+
 void PySpikeyConfig::enableNeuron(int neuronIndex, bool value)
 {
 	this->neuron[neuronIndex].config[2] = value;

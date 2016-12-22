@@ -30,6 +30,7 @@ public:
 	                      float drvifall  = std::numeric_limits<float>::quiet_NaN(),
 	                      float drvirise  = std::numeric_limits<float>::quiet_NaN(),
 	                      float adjdel    = std::numeric_limits<float>::quiet_NaN());
+	boost::python::tuple getSynapseDriver(int driverIndex);
 	void setWeights(int neuronIndex, std::vector<ubyte> weight);
 	void setVoltages(std::vector<std::vector<double>> voltages);
 	void setVoltageBiases(std::vector<std::vector<double>> voltages);
