@@ -12,6 +12,8 @@
 #include <boost/python/return_internal_reference.hpp>
 #include <boost/python/enum.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/args.hpp>
+
 
 // the symap2ic logging mechanism
 #include "logger.h"
@@ -140,7 +142,15 @@ BOOST_PYTHON_MODULE(pyhal_c_interface_s1v2)
 	    .def("enableMembraneMonitor", &PySpikeyConfig::enableMembraneMonitor)
 	    .def("membraneMonitorEnabled", &PySpikeyConfig::membraneMonitorEnabled)
 	    .def("writeConfigFile", &PySpikeyConfig::writeConfigFile)
-	    .def("setSynapseDriver", &PySpikeyConfig::setSynapseDriver)
+	    .def("setSynapseDriver", &PySpikeyConfig::setSynapseDriver,
+	        (boost::python::arg("driverIndex"),
+	         boost::python::arg("sourceType") = -1,
+	         boost::python::arg("source")     = -1,
+	         boost::python::arg("type")       = -1,
+	         boost::python::arg("drviout")    = std::numeric_limits<float>::quiet_NaN(),
+	         boost::python::arg("drvifall")   = std::numeric_limits<float>::quiet_NaN(),
+	         boost::python::arg("drvirise")   = std::numeric_limits<float>::quiet_NaN(),
+	         boost::python::arg("adjdel")     = std::numeric_limits<float>::quiet_NaN()))
 	    .def("setWeights", &PySpikeyConfig::setWeights)
 	    .def("setVoltages", &PySpikeyConfig::setVoltages)
 	    .def("setVoltageBiases", &PySpikeyConfig::setVoltageBiases)

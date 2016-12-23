@@ -112,74 +112,120 @@ void PySpikeyConfig::setSynapseDriver(int driverIndex, int sourceType, int sourc
                                       float drviout, float drvifall, float drvirise, float adjdel)
 {
 	// cout << "configuring synapse driver " << driverIndex << " to be type " << type << " with
-	// drviout " << drviout << ", old drviout was " << this->synapse[driverIndex].drviout << endl;
-	if (drviout > 2.5) {
-		drviout = 2.5;
-		LOG4CXX_WARN(logger, "Drviout outside range: clipped to 2.5muA");
+	// drviout " << drviout << ", old drviout was " << synapse[driverIndex].drviout << endl;
+
+	// Is a complete new row configuation provided?
+	bool isCompleteRowconf = (sourceType != -1) && (source != -1) && (type != -1);
+	// Throw exception in case of incomplete (but non-empty) rowconf data
+
+	if ((!(isCompleteRowconf)) && ( (sourceType != -1) || (source != -1) || (type != -1) ) )  {
+		PyErr_SetString(PyExc_TypeError, "Incomplete row configuration given! "
+		                                  "From (sourceType, source, type) provide either all or none.");
+		py::throw_error_already_set();
 	}
-	if (drviout < 0) {
-		drviout = 0;
-		LOG4CXX_WARN(logger, "Drviout outside range: clipped to 0muA");
-	}
-	if (drvifall > 2.5) {
-		drvifall = 2.5;
-		LOG4CXX_WARN(logger, "Drvifall outside range: clipped to 2.5muA");
-	}
-	if (drvifall < 0) {
-		drvifall = 0;
-		LOG4CXX_WARN(logger, "Drvifall outside range: clipped to 0muA");
-	}
-	if (drvirise > 2.5) {
-		drvirise = 2.5;
-		LOG4CXX_WARN(logger, "Drvirise outside range: clipped to 2.5muA");
-	}
-	if (drvirise < 0) {
-		drvirise = 0;
-		LOG4CXX_WARN(logger, "Drvirise outside range: clipped to 0muA");
-	}
+
+	// Is this a complete call (i.e. no default values are used)?
+	bool isCompleteData = isCompleteRowconf &&
+	                      (!std::isnan(drviout)) && (!std::isnan(drvifall)) &&
+	                      (!std::isnan(drvirise)) && (!std::isnan(adjdel));
+
+	// check if this is the first time this synapse driver is configured...
+	bool firstConfiguration = !(synapseConfigured[driverIndex]);
 
 	// this bitset is needed by SpikeyConfig::synapse
 	bitset<SpikeyConfig::num_sc> newrowconf, oldrowconf;
 
-	// check if this is the first time this synapse driver is configured...
-	bool firstConfiguration = !(this->synapseConfigured[driverIndex]);
-
 	// get old configuration
-	oldrowconf = this->synapse[driverIndex].config;
+	oldrowconf = synapse[driverIndex].config;
 
-	// fill connectivity bitset
-	newrowconf[0] = (sourceType == 0); // sourceType == 1: external input ----- souceType == 0:
-	                                   // internal feedback
-	newrowconf[1] =
-	    (sourceType == 0
-	         ? (driverIndex / SpikeyConfig::num_presyns == source / SpikeyConfig::num_neurons)
-	         : false); // in case of feedback: from same or adjacent block)
-	newrowconf[2] = static_cast<bool>(type & 4);   // excitatory
-	newrowconf[3] = static_cast<bool>(type & 8);   // inhibitory
-	newrowconf[4] = static_cast<bool>(type & 16);  // enable STP
-	newrowconf[5] = static_cast<bool>(type & 32);  // fac or dep
-	newrowconf[6] = static_cast<bool>(type & 64);  // cap2
-	newrowconf[7] = static_cast<bool>(type & 128); // cap4
-	// 4: enable short term depression / facilitation
-	// 5: depression (1) / fac (0)
-	// 6: enable cap2 (+= 2/8) => 1/8 or 3/8 ? (please CHECK!)
-	// 7: enable cap4 (+= 4/8) => 5/8 or 7/8 ? (please CHECK!)
+	// fill connectivity bitset (only if isCompleteRowconf)
+	if (isCompleteRowconf) {
+		newrowconf[0] = (sourceType == 0); // sourceType == 1: external input ----- souceType == 0:
+		                                   // internal feedback
+		newrowconf[1] =
+				(sourceType == 0
+						? (driverIndex / SpikeyConfig::num_presyns == source / SpikeyConfig::num_neurons)
+						: false); // in case of feedback: from same or adjacent block)
+		newrowconf[2] = static_cast<bool>(type & 4);   // excitatory
+		newrowconf[3] = static_cast<bool>(type & 8);   // inhibitory
+		newrowconf[4] = static_cast<bool>(type & 16);  // enable STP
+		newrowconf[5] = static_cast<bool>(type & 32);  // fac or dep
+		newrowconf[6] = static_cast<bool>(type & 64);  // cap2
+		newrowconf[7] = static_cast<bool>(type & 128); // cap4
+		// 4: enable short term depression / facilitation
+		// 5: depression (1) / fac (0)
+		// 6: enable cap2 (+= 2/8) => 1/8 or 3/8 ? (please CHECK!)
+		// 7: enable cap4 (+= 4/8) => 5/8 or 7/8 ? (please CHECK!)
 
-	// cout << ">> C++: " << newrowconf << endl;
-	// if (newrowconf[2] && newrowconf[3])
-	//   newrowconf[2] = false;
-
-	if (firstConfiguration) {
-		this->synapse[driverIndex].config = newrowconf;
-		// fill current parameters
-		this->synapse[driverIndex].drviout = drviout;
-		this->synapse[driverIndex].drvifall = drvifall;
-		this->synapse[driverIndex].drvirise = drvirise;
-		this->synapse[driverIndex].adjdel = adjdel;
-		this->synapseConfigured[driverIndex] = true;
+		// cout << ">> C++: " << newrowconf << endl;
+		// if (newrowconf[2] && newrowconf[3])
+		//   newrowconf[2] = false;
+	}
+	else {
+		newrowconf = oldrowconf;
 	}
 
-	else {
+	// Clip all current values to valid range (if given)
+	if (!std::isnan(drviout)) {
+		if (drviout > 2.5) {
+			drviout = 2.5;
+			LOG4CXX_WARN(logger, "Drviout outside range: clipped to 2.5muA");
+		}
+		if (drviout < 0) {
+			drviout = 0;
+			LOG4CXX_WARN(logger, "Drviout outside range: clipped to 0muA");
+		}
+	}
+	if (!std::isnan(drvifall)) {
+		if (drvifall > 2.5) {
+			drvifall = 2.5;
+			LOG4CXX_WARN(logger, "Drvifall outside range: clipped to 2.5muA");
+		}
+		if (drvifall < 0) {
+			drvifall = 0;
+			LOG4CXX_WARN(logger, "Drvifall outside range: clipped to 0muA");
+		}
+	}
+	if (!std::isnan(drvirise)) {
+		if (drvirise > 2.5) {
+			drvirise = 2.5;
+			LOG4CXX_WARN(logger, "Drvirise outside range: clipped to 2.5muA");
+		}
+		if (drvirise < 0) {
+			drvirise = 0;
+			LOG4CXX_WARN(logger, "Drvirise outside range: clipped to 0muA");
+		}
+	}
+	if (!std::isnan(adjdel)) {
+		if (adjdel > 2.5) {
+			adjdel = 2.5;
+			LOG4CXX_WARN(logger, "Adjdel outside range: clipped to 2.5muA");
+		}
+		if (adjdel < 0) {
+			adjdel = 0;
+			LOG4CXX_WARN(logger, "Adjdel outside range: clipped to 0muA");
+		}
+	}
+
+	// Set the driver
+	if (firstConfiguration) {
+		// Only accept complete function arguments during first call.
+		if (!(isCompleteData)) {
+				PyErr_SetString(PyExc_TypeError, "Incomplete synapse driver configuation during first "
+				                                 "configuration of this driver! Provide full information "
+				                                 "for fist configuration.");
+				py::throw_error_already_set();
+		}
+		synapse[driverIndex].config = newrowconf;
+
+		// fill current parameters
+		synapse[driverIndex].drviout = drviout;
+		synapse[driverIndex].drvifall = drvifall;
+		synapse[driverIndex].drvirise = drvirise;
+		synapse[driverIndex].adjdel = adjdel;
+		synapseConfigured[driverIndex] = true;
+	} else {
+		// else: change already initialized driver
 		if ((!newrowconf[2]) && !(newrowconf[3])) {
 			// Do nothing, because this synapse is neither excitatory nor inhibitory (weight=zero),
 			// i.e. the driver shall not be manipulated at all.
@@ -224,13 +270,17 @@ void PySpikeyConfig::setSynapseDriver(int driverIndex, int sourceType, int sourc
 				py::throw_error_already_set();
 			}
 			this->synapse[driverIndex].config = newrowconf;
-
-			// fill current parameters
-			this->synapse[driverIndex].drviout = drviout;
-			this->synapse[driverIndex].drvifall = drvifall;
-			this->synapse[driverIndex].drvirise = drvirise;
-			this->synapse[driverIndex].adjdel = adjdel;
 		}
+
+		// fill current parameters (each, if given)
+		if (!std::isnan(drviout))
+			synapse[driverIndex].drviout = drviout;
+		if (!std::isnan(drvifall))
+			synapse[driverIndex].drvifall = drvifall;
+		if (!std::isnan(drvirise))
+			synapse[driverIndex].drvirise = drvirise;
+		if (!std::isnan(adjdel))
+			synapse[driverIndex].adjdel = adjdel;
 	}
 }
 

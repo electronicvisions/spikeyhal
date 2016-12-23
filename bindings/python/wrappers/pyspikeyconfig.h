@@ -1,6 +1,7 @@
 #define PY_ARRAY_UNIQUE_SYMBOL hal
 
 #include <boost/python.hpp>
+#include <limits>
 
 
 using namespace spikey2;
@@ -21,8 +22,14 @@ public:
 	void enableNeuron(int neuronIndex, bool value);
 	void enableMembraneMonitor(int neuronIndex, bool value);
 	bool membraneMonitorEnabled(int neuronIndex);
-	void setSynapseDriver(int driverIndex, int sourceType, int source, int type, float drviout,
-	                      float drvifall, float drvirise, float adjdel);
+	void setSynapseDriver(int driverIndex,
+	                      int sourceType  = -1,
+	                      int source      = -1,
+	                      int type        = -1,
+	                      float drviout   = std::numeric_limits<float>::quiet_NaN(),
+	                      float drvifall  = std::numeric_limits<float>::quiet_NaN(),
+	                      float drvirise  = std::numeric_limits<float>::quiet_NaN(),
+	                      float adjdel    = std::numeric_limits<float>::quiet_NaN());
 	void setWeights(int neuronIndex, std::vector<ubyte> weight);
 	void setVoltages(std::vector<std::vector<double>> voltages);
 	void setVoltageBiases(std::vector<std::vector<double>> voltages);
