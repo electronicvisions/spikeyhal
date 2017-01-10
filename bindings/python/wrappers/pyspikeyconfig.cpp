@@ -270,17 +270,16 @@ void PySpikeyConfig::setSynapseDriver(int driverIndex, int sourceType, int sourc
 				py::throw_error_already_set();
 			}
 			this->synapse[driverIndex].config = newrowconf;
+			// fill current parameters (each, if given)
+			if (!std::isnan(drviout))
+				synapse[driverIndex].drviout = drviout;
+			if (!std::isnan(drvifall))
+				synapse[driverIndex].drvifall = drvifall;
+			if (!std::isnan(drvirise))
+				synapse[driverIndex].drvirise = drvirise;
+			if (!std::isnan(adjdel))
+				synapse[driverIndex].adjdel = adjdel;
 		}
-
-		// fill current parameters (each, if given)
-		if (!std::isnan(drviout))
-			synapse[driverIndex].drviout = drviout;
-		if (!std::isnan(drvifall))
-			synapse[driverIndex].drvifall = drvifall;
-		if (!std::isnan(drvirise))
-			synapse[driverIndex].drvirise = drvirise;
-		if (!std::isnan(adjdel))
-			synapse[driverIndex].adjdel = adjdel;
 	}
 }
 
