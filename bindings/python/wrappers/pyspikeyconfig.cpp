@@ -233,7 +233,7 @@ void PySpikeyConfig::setSynapseDriver(int driverIndex, int sourceType, int sourc
 			// corresponding to non-zero synapses in the same row!
 		} else {
 			// check for ambiguous configuration
-			if (newrowconf[2] && newrowconf[3]) {
+			if ( (newrowconf[2] && newrowconf[3]) || (oldrowconf[2] && newrowconf[3]) || (oldrowconf[3] && newrowconf[2]) ) {
 				PyErr_SetString(PyExc_TypeError, "Ambiguous synapse driver configuration! Can't be "
 				                                 "excitatory and inhibitory at the same time!");
 				py::throw_error_already_set();
