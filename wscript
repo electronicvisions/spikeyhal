@@ -177,8 +177,8 @@ def build(bld):
             install_path = installPathTests,
         )
 
-    bld.install_files(
-            '${PREFIX}/bin',
+    bld.install_as(
+            '${PREFIX}/bin/scvisual',
             'tools/scvisual.py',
             chmod=Utils.O755,
     )
