@@ -371,10 +371,32 @@ void PySpikeyConfig::setBiasbs(vector<float> biasbs)
 	}
 }
 
+namespace {
+template<typename T>
+struct ValueChecker
+{
+	ValueChecker(std::string const& name, T& value) {
+		if (!std::isnan(value)) {
+			std::stringstream debug_msg;
+			debug_msg << name << " outside range: clipped to ";
+			if (value > 2.5) {
+				debug_msg << "2.5uA";
+				value = 2.5;
+				LOG4CXX_WARN(logger, debug_msg.str());
+			}
+			if (value < 0) {
+				value = 0;
+				debug_msg << "0uA";
+				LOG4CXX_WARN(logger, debug_msg.str());
+			}
+		}
+	}
+};
+} // anonymous
 
 void PySpikeyConfig::setILeak(int neuronIndex, float value)
 {
-	// cout << "setting iLeak to " << value << endl;
+	ValueChecker<float>("ileak", value);
 	this->neuron[neuronIndex].ileak = value;
 }
 
@@ -387,7 +409,7 @@ float PySpikeyConfig::getILeak(int neuronIndex)
 
 void PySpikeyConfig::setIcb(int neuronIndex, float value)
 {
-	// cout << "setting iLeak to " << value << endl;
+	ValueChecker<float>("icb", value);
 	this->neuron[neuronIndex].icb = value;
 }
 
