@@ -156,10 +156,12 @@ def build(bld):
         )
 
     if bld.env.WITH_PYTHON:
+        import numpy
         bld(
             features     = 'cxx cshlib pyext',
             source       = bld.env.WRAPPERSRCS,
-            includes     = ['.', 'bindings/python', 'bindings/python/wrappers'],
+            includes     = ['bindings/python', 'bindings/python/wrappers', \
+                            numpy.get_include()],
             use          ='vmodule_objects logger_obj spikeyhal',
             uselib       = 'PY BOOSTPY PYHAL',
             target       = 'pyhal_c_interface_s1v2',
